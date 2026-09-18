@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenLogic — Logic Circuit Simulator</title>
+<meta name="description" content="A free, offline-capable logic gate simulator that runs entirely in your browser. Circuits save as plain JSON files you own.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3 3h4v3h2.5a3 3 0 010 4H7v3H3z' fill='%232f6fed'/></svg>">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true">
+  <defs>
+    <g id="i-new"><path d="M4 2h5l3 3v9H4z"/><path d="M9 2v3h3"/></g>
+    <g id="i-open"><path d="M8 10.5V2M5 5l3-3 3 3"/><path d="M2.5 10v2.5a1 1 0 001 1h9a1 1 0 001-1V10"/></g>
+    <g id="i-save"><path d="M8 2v8.5M5 7.5l3 3 3-3"/><path d="M2.5 10v2.5a1 1 0 001 1h9a1 1 0 001-1V10"/></g>
+    <g id="i-png"><path d="M2.5 3.5h11v9h-11z"/><path d="M3.5 11l3-3.5 2.5 2.5 2-1.5 2.5 2.5"/><circle cx="6" cy="6" r="1"/></g>
+    <g id="i-undo"><path d="M3.5 7.5h6.5a3.5 3.5 0 010 7H7"/><path d="M6.5 4.5l-3 3 3 3"/></g>
+    <g id="i-redo"><path d="M12.5 7.5H6a3.5 3.5 0 000 7h3"/><path d="M9.5 4.5l3 3-3 3"/></g>
+    <g id="i-cursor"><path d="M4 2.5l7.5 5.2-3.4.7-1.2 3.4z" fill="currentColor"/></g>
+    <g id="i-pan"><path d="M8 2v12M2 8h12M8 2L6.2 3.8M8 2l1.8 1.8M8 14l-1.8-1.8M8 14l1.8-1.8M2 8l1.8-1.8M2 8l1.8 1.8M14 8l-1.8-1.8M14 8l-1.8 1.8"/></g>
+    <g id="i-copy"><path d="M5.5 5.5h8v8h-8z"/><path d="M10.5 2.5h-8v8"/></g>
+    <g id="i-paste"><path d="M5.5 3H3.5v10.5h9V3h-2"/><path d="M5.5 1.8h5v2.7h-5z"/></g>
+    <g id="i-rotate"><path d="M13.2 8a5.2 5.2 0 11-1.9-4"/><path d="M13.4 1.8v2.7h-2.7"/></g>
+    <g id="i-trash"><path d="M3 4.3h10M6.3 4.3V2.6h3.4v1.7M4.7 4.3l.6 9h5.4l.6-9"/></g>
+    <g id="i-fit"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></g>
+    <g id="i-grid"><path d="M2.5 6h11M2.5 10h11M6 2.5v11M10 2.5v11"/></g>
+    <g id="i-theme"><path d="M13.2 9.6A5.6 5.6 0 116.4 2.8 4.6 4.6 0 0013.2 9.6z"/></g>
+    <g id="i-help"><circle cx="8" cy="8" r="6"/><path d="M6.2 6.2a1.9 1.9 0 113 1.7c-.6.4-1.2.7-1.2 1.6"/><circle cx="8" cy="11.6" r=".6" fill="currentColor" stroke="none"/></g>
+    <g id="i-reset"><path d="M4.2 3.5v9"/><path d="M12.6 3.7L6.4 8l6.2 4.3z" fill="currentColor"/></g>
+    <g id="i-play"><path d="M5.2 3.4L12.4 8l-7.2 4.6z" fill="currentColor"/></g>
+    <g id="i-pause"><path d="M5.8 3.4v9.2M10.2 3.4v9.2"/></g>
+    <g id="i-step"><path d="M11.8 3.5v9"/><path d="M3.4 3.7L9.6 8l-6.2 4.3z" fill="currentColor"/></g>
+    <g id="i-zoom-in"><circle cx="7" cy="7" r="4.4"/><path d="M10.3 10.3L14 14M5.2 7h3.6M7 5.2v3.6"/></g>
+    <g id="i-zoom-out"><circle cx="7" cy="7" r="4.4"/><path d="M10.3 10.3L14 14M5.2 7h3.6"/></g>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h4v3h2.5a3 3 0 010 4H7v3H3z"/></svg>
+    <span>OpenLogic</span>
+  </div>
+
+  <div class="group">
+    <button id="btn-new"    class="tool" title="New circuit"><svg><use href="#i-new"/></svg></button>
+    <button id="btn-open"   class="tool" title="Open a circuit file  (Ctrl+O)"><svg><use href="#i-open"/></svg></button>
+    <button id="btn-save"   class="tool" title="Download this circuit  (Ctrl+S)"><svg><use href="#i-save"/></svg></button>
+    <button id="btn-png"    class="tool optional" title="Export as PNG"><svg><use href="#i-png"/></svg></button>
+  </div>
+
+  <div class="group">
+    <button id="btn-undo" class="tool" title="Undo  (Ctrl+Z)" disabled><svg><use href="#i-undo"/></svg></button>
+    <button id="btn-redo" class="tool" title="Redo  (Ctrl+Shift+Z)" disabled><svg><use href="#i-redo"/></svg></button>
+  </div>
+
+  <div class="group">
+    <button id="btn-select" class="tool" title="Select tool" aria-pressed="true"><svg><use href="#i-cursor"/></svg></button>
+    <button id="btn-pan"    class="tool" title="Pan tool  (or hold Space)" aria-pressed="false"><svg><use href="#i-pan"/></svg></button>
+  </div>
+
+  <div class="group optional">
+    <button id="btn-copy"   class="tool" title="Copy  (Ctrl+C)"><svg><use href="#i-copy"/></svg></button>
+    <button id="btn-paste"  class="tool" title="Paste  (Ctrl+V)"><svg><use href="#i-paste"/></svg></button>
+    <button id="btn-rotate" class="tool" title="Rotate  (R)"><svg><use href="#i-rotate"/></svg></button>
+    <button id="btn-delete" class="tool" title="Delete  (Del)"><svg><use href="#i-trash"/></svg></button>
+  </div>
+
+  <div class="group">
+    <button id="btn-fit"  class="tool" title="Zoom to fit  (0)"><svg><use href="#i-fit"/></svg></button>
+    <button id="btn-grid" class="tool" title="Toggle grid" aria-pressed="true"><svg><use href="#i-grid"/></svg></button>
+  </div>
+
+  <div class="spacer"></div>
+  <div id="status" class="status" role="status" aria-live="polite"></div>
+
+  <div class="group">
+    <button id="btn-theme" class="tool" title="Toggle dark mode" aria-pressed="false"><svg><use href="#i-theme"/></svg></button>
+    <button id="btn-help"  class="tool" title="Help and shortcuts"><svg><use href="#i-help"/></svg></button>
+  </div>
+</header>
+
+<main class="workspace">
+  <aside class="palette">
+    <div class="palette-search">
+      <input id="palette-search" type="search" placeholder="Search components" aria-label="Search components" autocomplete="off">
+    </div>
+    <div id="palette-body" class="palette-body"></div>
+    <p class="palette-hint">Click a part, then click the canvas. Drag from a pin to wire.</p>
+  </aside>
+
+  <div class="stage">
+    <canvas id="canvas"></canvas>
+
+    <div id="osc-warning" class="osc" hidden>Circuit is oscillating — feedback never settles</div>
+
+    <div class="sim-bar">
+      <button id="sim-reset" class="tool" title="Reset simulation state"><svg><use href="#i-reset"/></svg></button>
+      <button id="sim-play"  class="tool" title="Pause simulation" aria-pressed="true">
+        <svg class="i-play off"><use href="#i-play"/></svg>
+        <svg class="i-pause"><use href="#i-pause"/></svg>
+      </button>
+      <button id="sim-step"  class="tool" title="Step to the next clock edge"><svg><use href="#i-step"/></svg></button>
+    </div>
+
+    <div class="zoom-bar">
+      <button id="zoom-out" class="tool" title="Zoom out  (-)"><svg><use href="#i-zoom-out"/></svg></button>
+      <input id="zoom-range" type="range" min="0.25" max="4" step="0.05" value="1" aria-label="Zoom level">
+      <button id="zoom-in" class="tool" title="Zoom in  (+)"><svg><use href="#i-zoom-in"/></svg></button>
+      <span id="zoom-level" class="zoom-level">100%</span>
+    </div>
+  </div>
+
+  <aside id="inspector" class="inspector" hidden>
+    <h2 id="inspector-title" class="inspector-title"></h2>
+    <div id="inspector-body" class="inspector-body"></div>
+  </aside>
+</main>
+
+<div id="toast" class="toast"></div>
+<input type="file" id="file-input" accept=".json,application/json" hidden>
+
+<dialog id="help-dialog" class="dialog">
+  <h2>OpenLogic</h2>
+  <p class="lede">A logic circuit simulator that runs entirely in your browser. Nothing is uploaded anywhere — your circuits are plain JSON files on your own disk.</p>
+
+  <h3>Building</h3>
+  <ul>
+    <li>Click a part in the left tray, then click the canvas to drop it. Hold <kbd>Shift</kbd> while placing to keep laying down more of the same part.</li>
+    <li>Drag from one pin to another to wire them up. Either direction works.</li>
+    <li>One output can feed many inputs. Several outputs may share one input — that's what <b>Tri-State</b> is for.</li>
+    <li>Click a toggle switch or hold a push button to drive the circuit while it runs.</li>
+  </ul>
+
+  <h3>Signals</h3>
+  <ul>
+    <li><b class="k-low">Grey</b> is 0, <b class="k-high">green</b> is 1.</li>
+    <li><b class="k-z">Dashed</b> means floating (Z) — nothing is driving that net. Gates read a floating input as 0.</li>
+    <li><b class="k-err">Red</b> means two outputs are fighting over one net.</li>
+  </ul>
+
+  <h3>Saving</h3>
+  <ul>
+    <li><b>Download</b> writes a <code>.json</code> file you can keep, email or commit to git.</li>
+    <li><b>Open</b> loads one back, or just drag the file onto the canvas.</li>
+    <li>Your work is also kept in this browser's local storage as a crash net. Clearing site data erases it — download anything you care about.</li>
+  </ul>
+
+  <h3>Shortcuts</h3>
+  <table class="keys">
+    <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Download circuit</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open circuit</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Redo</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd>/<kbd>X</kbd></td><td>Copy / paste / cut</td><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select all</td><td><kbd>Del</kbd></td><td>Delete selection</td></tr>
+    <tr><td><kbd>R</kbd></td><td>Rotate 90°</td><td><kbd>Shift</kbd>+<kbd>R</kbd></td><td>Rotate back</td></tr>
+    <tr><td><kbd>Space</kbd>+drag</td><td>Pan</td><td>Scroll</td><td>Zoom</td></tr>
+    <tr><td><kbd>0</kbd></td><td>Zoom to fit</td><td><kbd>Alt</kbd>+drag</td><td>Move without grid snap</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Cancel / deselect</td><td>Double-click</td><td>Zoom to fit</td></tr>
+  </table>
+
+  <h3>Notes</h3>
+  <ul>
+    <li>All flip-flops trigger on the <b>rising</b> clock edge.</li>
+    <li>D flip-flop <b>PRE</b> and <b>CLR</b> are <b>active high</b>, so an unconnected pin does nothing.</li>
+    <li>Gate input counts are editable — select a gate and change <b>Inputs</b> in the panel on the right.</li>
+  </ul>
+
+  <button id="help-close" class="btn primary" autofocus>Close</button>
+</dialog>
+
+<script src="js/signal.js"></script>
+<script src="js/components.js"></script>
+<script src="js/parts-gates.js"></script>
+<script src="js/parts-io.js"></script>
+<script src="js/parts-ff.js"></script>
+<script src="js/circuit.js"></script>
+<script src="js/simulator.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/history.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/interaction.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
