@@ -298,6 +298,58 @@ await page.screenshot({ path: 'shot-07-narrow.png' });
 check('narrow layout has no horizontal page scroll',
   await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 
+// --- no blank frame when the stage resizes --------------------------------
+// Writing canvas.width blanks the backing store. If the repaint waits for the
+// next rAF, the browser composites an empty canvas: a visible flash every time
+// the inspector opens or closes. Sample every frame and assert none is blank.
+{
+  const p3 = await ctx.newPage();
+  await p3.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
+  await p3.goto(BASE, { waitUntil: 'networkidle' });
+  await p3.waitForTimeout(500);
+  await p3.evaluate(() => {
+    window.__blanks = [];
+    window.__resizes = 0;
+    const sample = (label) => {
+      const cv = OL.app.canvas;
+      const px = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 3; i < px.length; i += 4 * 97) if (px[i] !== 0) return;
+      window.__blanks.push(label + '@' + cv.width);
+    };
+    // Registered after the app's observer, so it runs once the app has
+    // already reallocated the backing store for this frame.
+    new ResizeObserver(() => { window.__resizes++; sample('resize'); }).observe(OL.app.canvas);
+    (function tick() { sample('frame'); requestAnimationFrame(tick); })();
+  });
+
+  const at = (wx, wy) => p3.evaluate(([wx, wy]) => {
+    const s = OL.app.renderer.toScreen(wx, wy);
+    const r = OL.app.canvas.getBoundingClientRect();
+    return { x: r.left + s.x, y: r.top + s.y };
+  }, [wx, wy]);
+
+  // Place then deselect repeatedly: each one opens and closes the inspector,
+  // which resizes the stage without any window resize.
+  for (const [type, wx, wy] of [['nand', 520, 300], ['or', 520, 420]]) {
+    await p3.click(`.part[data-type="${type}"]`);
+    const spot = await at(wx, wy);
+    await p3.mouse.click(spot.x, spot.y);
+    await p3.waitForTimeout(120);
+    const empty = await at(900, 650);
+    await p3.mouse.click(empty.x, empty.y);
+    await p3.waitForTimeout(120);
+  }
+  await p3.setViewportSize({ width: 1100, height: 700 });
+  await p3.waitForTimeout(400);
+
+  const flash = await p3.evaluate(() => ({ blanks: window.__blanks, resizes: window.__resizes }));
+  check('stage resize never composites a blank frame',
+    flash.resizes > 0 && flash.blanks.length === 0,
+    `${flash.resizes} resizes, ${flash.blanks.length} blank frames` +
+    (flash.blanks.length ? ': ' + flash.blanks.join(', ') : ''));
+  await p3.close();
+}
+
 // --- boots from file:// with no server -----------------------------------
 {
   const p2 = await ctx.newPage();

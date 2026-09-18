@@ -75,7 +75,13 @@
         r.height === this.renderer.cssHeight &&
         dpr === this.renderer.dpr) return;
     this.renderer.resize();
-    this.requestRender();
+    /* Writing canvas.width blanks the backing store. Repaint synchronously
+       rather than waiting for the next rAF: ResizeObserver callbacks run
+       after layout but before paint, so this lands in the same frame.
+       Deferring composites one empty frame, which reads as a flash every
+       time the inspector opens or closes. */
+    this.renderer.render(this.interaction.scene());
+    this.dirty = false;
   };
 
   App.prototype.requestRender = function () { this.dirty = true; };

@@ -38,4 +38,6 @@ Environment overrides:
 - A real file download, and uploading it back
 - A corrupt file failing gracefully
 - No horizontal page scroll on a narrow viewport
+- No blank frame composited when the stage resizes (the inspector opening
+  reallocates the canvas backing store, which blanks it)
 - Booting from a `file://` URL with no server

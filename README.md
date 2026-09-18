@@ -174,7 +174,7 @@ python3 -m http.server 8777 &
 node tests/run.mjs
 ```
 
-27 checks drive the real page in a real browser: half-adder truth table,
+28 checks drive the real page in a real browser: half-adder truth table,
 T flip-flop divide-by-2, tri-state `Z`/conflict resolution, oscillation
 detection, file download and re-upload, undo/redo, and a `file://` boot.
 See [tests/README.md](tests/README.md).
